@@ -16,6 +16,14 @@ The unsigned [0, 15] + zero-point representation covers both asymmetric quantiza
 
 import torch
 
+__all__ = [
+    "quantize_weight_int4_grouped",
+    "pack_int4",
+    "unpack_int4",
+    "dequantize_int4",
+    "w4a16_reference",
+]
+
 
 def quantize_weight_int4_grouped(
     weight: torch.Tensor,

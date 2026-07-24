@@ -24,6 +24,15 @@ from typing import NamedTuple
 import torch
 import torch.nn.functional as F
 
+__all__ = [
+    "MoERoutingResult",
+    "moe_router_torch",
+    "permute_tokens",
+    "unpermute_tokens",
+    "expert_ffn",
+    "MoEReference",
+]
+
 
 class MoERoutingResult(NamedTuple):
     """Result of MoE routing computation.
