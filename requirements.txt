@@ -8,7 +8,7 @@ pytest>=7.0.0
 pytest-benchmark>=4.0.0
 
 # Benchmarking and visualization
-matplotlib>=3.5.0
+matplotlib>=3.10.9
 pandas>=1.4.0
 
 # Linting and type checking (CPU-side CI)
