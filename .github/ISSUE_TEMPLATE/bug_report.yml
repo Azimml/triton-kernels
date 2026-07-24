@@ -1,0 +1,54 @@
+name: Bug report
+description: Report incorrect results, a crash, or a performance regression in a kernel
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. A minimal reproduction with concrete shapes and
+        dtypes is by far the fastest path to a fix for a kernel issue.
+  - type: dropdown
+    id: kernel
+    attributes:
+      label: Kernel
+      description: Which kernel or utility is affected?
+      options:
+        - rmsnorm / rmsnorm_residual_fused
+        - swiglu_fused
+        - int8_gemm (W8A16)
+        - w4a16_gemm (W4A16)
+        - fused_moe_forward (MoE dispatch)
+        - quantization utilities
+        - other / not sure
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you observe, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: Smallest snippet that shows the problem. Include tensor shapes and dtypes.
+      render: python
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU
+      description: e.g. NVIDIA A100-SXM4-80GB, AMD MI300X, or "CPU only (reference math)"
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Environment
+      description: Output of `python -c "import torch, triton; print(torch.__version__, triton.__version__)"`
+    validations:
+      required: true
