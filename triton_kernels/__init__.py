@@ -42,6 +42,7 @@ _GPU_EXPORTS = [
     "TritonRMSNorm",
     # SwiGLU
     "swiglu_fused",
+    "swiglu_with_bias",
     "swiglu_torch",
     "SwiGLU",
     # INT8 GEMM
@@ -107,6 +108,7 @@ try:
         SwiGLU,
         swiglu_fused,
         swiglu_torch,
+        swiglu_with_bias,
     )
     from triton_kernels.w4a16 import (
         pack_int4,
