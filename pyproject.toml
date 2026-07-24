@@ -42,7 +42,7 @@ bench = [
     "pandas>=1.4.0",
 ]
 lint = [
-    "ruff>=0.6",
+    "ruff>=0.16.0",
     "mypy>=1.10",
 ]
 all = [
