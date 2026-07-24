@@ -145,11 +145,25 @@ linear = Int8Linear.from_linear(pretrained_linear)        # INT8 weights + optim
 qlin = QuantizedLinear.from_linear(pretrained_linear, scheme="asymmetric")  # affine INT8 ref
 ```
 
+## Examples
+
+CPU-only scripts under [`examples/`](examples/) call the PyTorch reference
+implementations (no GPU or Triton required), so they run anywhere and show the
+numerics the kernels are validated against:
+
+```bash
+python examples/quantization_roundtrip.py   # INT8 sym vs asym error metrics
+python examples/w4a16_reference_demo.py      # 4-bit weight-only GEMM, 4x smaller weights
+python examples/moe_reference_demo.py        # top-2/8-expert MoE + per-expert token load
+```
+
+See [examples/README.md](examples/README.md) for details.
+
 ## Running the tests
 
 The GPU kernel tests skip automatically when no CUDA device is present, so the
-suite is safe to run anywhere; the quantization numerics and host-side launch
-heuristics run on CPU.
+suite is safe to run anywhere; the quantization numerics, reference math, and
+host-side launch heuristics run on CPU.
 
 ```bash
 pytest tests/                       # full suite (GPU tests skip without CUDA)
