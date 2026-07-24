@@ -10,6 +10,8 @@ import pytest
 import torch
 
 from reference.moe_reference import (
+    MoEReference,
+    expert_ffn,
     moe_router_torch,
     permute_tokens,
     unpermute_tokens,
@@ -136,3 +138,49 @@ class TestPermuteUnpermute:
         # Ground truth: each token is weight-summed over its own duplicated copies.
         expected = (hidden.unsqueeze(1) * top_k_weights.unsqueeze(-1)).sum(dim=1)
         torch.testing.assert_close(combined, expected, rtol=1e-4, atol=1e-4)
+
+
+class TestExpertFFN:
+    """The SwiGLU expert FFN matches its explicit definition."""
+
+    def test_matches_swiglu_definition(self):
+        """expert_ffn == (silu(x @ w_gate.T) * (x @ w_up.T)) @ w_down.T."""
+        torch.manual_seed(6)
+        n, hidden_dim, ffn_dim = 5, 16, 32
+        tokens = torch.randn(n, hidden_dim)
+        w_gate = torch.randn(ffn_dim, hidden_dim)
+        w_up = torch.randn(ffn_dim, hidden_dim)
+        w_down = torch.randn(hidden_dim, ffn_dim)
+
+        out = expert_ffn(tokens, w_gate, w_up, w_down)
+
+        gate = torch.nn.functional.silu(tokens @ w_gate.T)
+        up = tokens @ w_up.T
+        expected = (gate * up) @ w_down.T
+        torch.testing.assert_close(out, expected, rtol=1e-4, atol=1e-4)
+
+    def test_output_shape(self):
+        tokens = torch.randn(7, 8)
+        out = expert_ffn(tokens, torch.randn(20, 8), torch.randn(20, 8), torch.randn(8, 20))
+        assert out.shape == (7, 8)
+
+
+class TestMoEReferenceForward:
+    """End-to-end MoEReference forward pass on CPU."""
+
+    @pytest.mark.parametrize("gating", ["softmax", "sigmoid"])
+    def test_forward_shape_and_routing(self, gating: str):
+        torch.manual_seed(7)
+        hidden_dim, ffn_dim, num_experts, top_k = 16, 32, 8, 2
+        num_tokens = 12
+        moe = MoEReference(hidden_dim, ffn_dim, num_experts, top_k, gating=gating)
+        x = torch.randn(num_tokens, hidden_dim)
+
+        output, routing = moe(x)
+
+        assert output.shape == (num_tokens, hidden_dim)
+        assert torch.isfinite(output).all()
+        assert routing.top_k_indices.shape == (num_tokens, top_k)
+        # All selected experts are valid indices.
+        assert routing.top_k_indices.min() >= 0
+        assert routing.top_k_indices.max() < num_experts
