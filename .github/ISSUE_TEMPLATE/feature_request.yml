@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose a new kernel, optimization, or documentation improvement
+title: "[feat]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is an educational kernel collection. Proposals that add a
+        well-characterized kernel (with a PyTorch reference and a roofline
+        rationale) or that clarify the existing ones are both in scope.
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What problem does this solve? Which model / shape / regime does it matter for?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: The kernel, optimization, or doc you have in mind.
+    validations:
+      required: true
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Performance rationale
+      description: >
+        For a kernel/optimization, what is the expected memory-traffic or roofline
+        win, and why? (Leave blank for docs-only requests.)
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This is portable Triton (no vendor-specific CUDA/HIP).
+        - label: I can provide or describe a PyTorch reference for correctness.
