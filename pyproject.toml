@@ -28,7 +28,7 @@ classifiers = [
 dependencies = [
     # The kernels use Triton 3.x idioms (e.g. do_bench quantiles, current
     # tl.dot dtype handling). The old >=2.1 floor did not reflect reality.
-    "torch>=2.1.0",
+    "torch>=2.13.0",
     "triton>=3.0",
 ]
 
