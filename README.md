@@ -37,6 +37,17 @@ while the arithmetic is well under 1 ms. The wins therefore come from moving
 | [`fused_moe_forward`](triton_kernels/moe/fused_moe.py) | MoE dispatch: router -> permute -> grouped expert GEMM -> unpermute | Replace `num_experts x 3` small cuBLAS calls with a block-scheduled grouped GEMM | **up to 9.1x** vs PyTorch loop; beats Megablocks at small batch |
 | [`w4a16_gemm`](triton_kernels/w4a16.py) | W4A16 4-bit weight-only GEMM (GPTQ/AWQ) | 4-bit weights, per-group dequant fused into the K-loop, autotuned split-K decode path | **1.2-1.3x vs FP16** (decode), **4x** less weight memory |
 
+Every kernel is paired with a PyTorch reference and validated against it. The
+reference math also runs on CPU, so the numerics are testable without a GPU:
+
+| Kernel | PyTorch reference | Design note | Correctness test (GPU) | Reference test (CPU) |
+|--------|-------------------|-------------|------------------------|----------------------|
+| `rmsnorm` | `rmsnorm_torch` | [rmsnorm.md](docs/rmsnorm.md) | `tests/test_rmsnorm.py` | `tests/test_reference_numerics.py` |
+| `swiglu_fused` | `swiglu_torch` | [swiglu.md](docs/swiglu.md) | `tests/test_swiglu.py` | `tests/test_reference_numerics.py` |
+| `int8_gemm` | `quantization.py` | [quantization.md](docs/quantization.md) | `tests/test_quantized_matmul.py` | `tests/test_quantization.py` |
+| `w4a16_gemm` | [`reference/w4a16_reference.py`](reference/w4a16_reference.py) | [w4a16.md](docs/w4a16.md) | `tests/test_w4a16.py` | `tests/test_w4a16_reference.py` |
+| `fused_moe_forward` | [`reference/moe_reference.py`](reference/moe_reference.py) | [moe_dispatch.md](docs/moe_dispatch.md) | `tests/test_moe_dispatch.py` | `tests/test_moe_reference.py` |
+
 ### Quantization utilities
 
 `triton_kernels/quantization.py` provides both **symmetric** and **asymmetric
