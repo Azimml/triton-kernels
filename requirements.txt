@@ -12,5 +12,5 @@ matplotlib>=3.5.0
 pandas>=1.4.0
 
 # Linting and type checking (CPU-side CI)
-ruff>=0.6
+ruff>=0.16.0
 mypy>=1.10
