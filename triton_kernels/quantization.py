@@ -42,6 +42,21 @@ QMIN = -128
 QMAX = 127
 
 
+def _validate_bits_and_dim(tensor: torch.Tensor, bits: int, dim: int | None) -> None:
+    """Validate the common ``bits`` / ``dim`` arguments with clear error messages.
+
+    Raised as ``ValueError`` (not ``assert``) so the checks survive ``python -O``
+    and give callers an actionable message rather than a bare traceback.
+    """
+    if bits != 8:
+        raise ValueError(f"Only 8-bit quantization is supported, got bits={bits}")
+    if dim is not None and not (-tensor.dim() <= dim < tensor.dim()):
+        raise ValueError(
+            f"dim={dim} is out of range for a {tensor.dim()}D tensor "
+            f"(valid: {-tensor.dim()}..{tensor.dim() - 1}, or None for per-tensor)"
+        )
+
+
 class QuantScheme(str, Enum):
     """Weight-only quantization scheme.
 
@@ -83,7 +98,7 @@ def quantize_symmetric(
         >>> weight_fp16 = dequantize(weight_int8, scale)
         >>> error = (weight - weight_fp16).abs().max()
     """
-    assert bits == 8, f"Only 8-bit quantization supported, got {bits}"
+    _validate_bits_and_dim(tensor, bits, dim)
 
     # Max value for symmetric INT8: 127 (we use symmetric range -127 to 127)
     qmax = QMAX
@@ -150,7 +165,7 @@ def quantize_asymmetric(
         >>> w_int8, scale, zp = quantize_asymmetric(weight, dim=1)
         >>> w_restored = dequantize(w_int8, scale, dim=0, zero_point=zp)
     """
-    assert bits == 8, f"Only 8-bit quantization supported, got {bits}"
+    _validate_bits_and_dim(tensor, bits, dim)
 
     # Number of representable steps between the two INT8 extremes.
     q_range = QMAX - QMIN  # 255

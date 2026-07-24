@@ -487,6 +487,23 @@ class TestQuantizeDispatch:
         with pytest.raises(ValueError):
             quantize(torch.randn(8, 8), scheme="nonexistent")
 
+    def test_invalid_bits_raises(self):
+        with pytest.raises(ValueError, match="8-bit"):
+            quantize_symmetric(torch.randn(8, 8), bits=4)
+        with pytest.raises(ValueError, match="8-bit"):
+            quantize_asymmetric(torch.randn(8, 8), bits=16)
+
+    def test_out_of_range_dim_raises(self):
+        with pytest.raises(ValueError, match="out of range"):
+            quantize_symmetric(torch.randn(8, 8), dim=2)
+        with pytest.raises(ValueError, match="out of range"):
+            quantize_asymmetric(torch.randn(8, 8), dim=5)
+
+    def test_negative_dim_accepted(self):
+        """A valid negative axis (e.g. -1) is accepted like torch semantics."""
+        q, scale = quantize_symmetric(torch.randn(4, 8), dim=-1)
+        assert scale.shape == (4,)
+
 
 class TestQuantizedLinearAsymmetric:
     """QuantizedLinear with the asymmetric scheme, end-to-end on CPU."""
