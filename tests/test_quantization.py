@@ -205,6 +205,33 @@ class TestQuantizeWeightPerChannel:
         scale_ratios = scale.max() / scale.min()
         assert scale_ratios > 10, "Scales should vary across rows"
 
+    def test_per_channel_beats_per_tensor_on_heterogeneous_rows(self):
+        """
+        When rows span very different magnitudes, a single per-tensor scale is
+        dominated by the largest row and crushes the small ones to a few INT8
+        codes. A per-channel scale sizes each row independently, so it must
+        achieve strictly higher SNR on this pathological weight.
+        """
+        torch.manual_seed(0)
+        weight = torch.stack(
+            [
+                torch.randn(512) * 100.0,  # large-magnitude row
+                torch.randn(512) * 1.0,
+                torch.randn(512) * 0.01,  # tiny row, starved by a shared scale
+                torch.randn(512) * 10.0,
+            ]
+        )
+
+        q_pt, s_pt = quantize_symmetric(weight, dim=None)
+        err_pt = calculate_quantization_error(weight, q_pt, s_pt)
+
+        q_pc, s_pc = quantize_weight_per_channel(weight)
+        err_pc = calculate_quantization_error(weight, q_pc, s_pc, dim=0)
+
+        assert err_pc["snr_db"] > err_pt["snr_db"] + 3.0, (
+            f"per-channel {err_pc['snr_db']:.1f} dB vs per-tensor {err_pt['snr_db']:.1f} dB"
+        )
+
 
 class TestQuantizedLinear:
     """Test suite for QuantizedLinear module."""
