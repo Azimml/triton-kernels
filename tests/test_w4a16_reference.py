@@ -14,6 +14,7 @@ from reference.w4a16_reference import (
     pack_int4,
     quantize_weight_int4_grouped,
     unpack_int4,
+    w4a16_reference,
 )
 
 
@@ -86,3 +87,45 @@ class TestGroupedQuantizeDequantize:
     def test_rejects_group_size_not_dividing_k(self):
         with pytest.raises(ValueError, match="divisible by group_size"):
             quantize_weight_int4_grouped(torch.randn(100, 8), group_size=64)
+
+
+class TestW4A16ReferenceGemm:
+    """The reference GEMM equals `x @ dequant(W_q)` with FP32 accumulation."""
+
+    @pytest.mark.parametrize("group_size", [64, 128])
+    def test_matches_explicit_dequant_matmul(self, group_size: int):
+        torch.manual_seed(1)
+        M, K, N = 8, 256, 64
+        x = torch.randn(M, K, dtype=torch.float32)
+        weight = torch.randn(K, N, dtype=torch.float32)
+
+        packed, scales, zeros = quantize_weight_int4_grouped(weight, group_size=group_size)
+        y = w4a16_reference(x, packed, scales, zeros, group_size)
+
+        # Independently reconstruct the dequantized weight and multiply.
+        w_dq = dequantize_int4(packed, scales, zeros, group_size, K)
+        expected = (x @ w_dq).to(x.dtype)
+        torch.testing.assert_close(y, expected, rtol=0, atol=1e-4)
+
+    def test_close_to_full_precision_matmul(self):
+        """4-bit reference stays close to the FP matmul it approximates."""
+        torch.manual_seed(2)
+        M, K, N = 4, 512, 128
+        x = torch.randn(M, K, dtype=torch.float32)
+        weight = torch.randn(K, N, dtype=torch.float32)
+
+        packed, scales, zeros = quantize_weight_int4_grouped(weight, group_size=128)
+        y = w4a16_reference(x, packed, scales, zeros, 128)
+        y_full = x @ weight
+
+        # Relative error of a 4-bit weight-only GEMM on random data is a few %.
+        rel = (y - y_full).norm() / y_full.norm()
+        assert rel < 0.1, f"relative error too high: {rel:.3f}"
+
+    def test_output_dtype_follows_activations(self):
+        x = torch.randn(2, 128, dtype=torch.float16)
+        weight = torch.randn(128, 32, dtype=torch.float16)
+        packed, scales, zeros = quantize_weight_int4_grouped(weight, group_size=64)
+        y = w4a16_reference(x, packed, scales, zeros, 64)
+        assert y.dtype == torch.float16
+        assert y.shape == (2, 32)
