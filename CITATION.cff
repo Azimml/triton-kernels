@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+title: "triton-kernels: portable GPU kernels for LLM inference in OpenAI Triton"
+abstract: >-
+  An educational collection of fused and quantized GPU kernels for LLM inference
+  written in OpenAI Triton (RMSNorm, SwiGLU, W8A16/W4A16 quantized GEMMs, and
+  fused Mixture-of-Experts dispatch), each paired with a PyTorch reference, a
+  correctness test suite, and a roofline analysis.
+type: software
+authors:
+  - alias: Azimml
+repository-code: "https://github.com/Azimml/triton-kernels"
+url: "https://github.com/Azimml/triton-kernels"
+license: MIT
+version: 0.1.0
+keywords:
+  - triton
+  - gpu
+  - cuda
+  - llm
+  - inference
+  - kernels
+  - quantization
+  - mixture-of-experts
