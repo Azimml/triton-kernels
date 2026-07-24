@@ -18,6 +18,7 @@ from triton_kernels.rmsnorm import (  # noqa: E402  (import after importorskip)
     rmsnorm_residual_torch,
     rmsnorm_torch,
 )
+from triton_kernels.swiglu import swiglu_torch  # noqa: E402
 
 
 class TestRMSNormReference:
@@ -65,3 +66,31 @@ class TestRMSNormResidualReference:
         fused = rmsnorm_residual_torch(x, residual, weight)
         separate = rmsnorm_torch(x + residual, weight)
         torch.testing.assert_close(fused, separate, rtol=1e-5, atol=1e-5)
+
+
+class TestSwiGLUReference:
+    """SwiGLU reference equals silu(gate) * up = gate * sigmoid(gate) * up."""
+
+    @pytest.mark.parametrize("shape", [(16,), (4, 32), (2, 8, 64)])
+    def test_matches_explicit_formula(self, shape: tuple):
+        torch.manual_seed(3)
+        gate = torch.randn(shape, dtype=torch.float32)
+        up = torch.randn(shape, dtype=torch.float32)
+
+        y = swiglu_torch(gate, up)
+
+        expected = gate * torch.sigmoid(gate) * up
+        torch.testing.assert_close(y, expected, rtol=1e-5, atol=1e-5)
+
+    def test_zero_gate_gives_zero_output(self):
+        """silu(0) = 0, so a zero gate zeroes the output regardless of up."""
+        gate = torch.zeros(4, 16)
+        up = torch.randn(4, 16)
+        torch.testing.assert_close(swiglu_torch(gate, up), torch.zeros_like(up))
+
+    def test_shape_and_dtype_preserved(self):
+        gate = torch.randn(3, 128, dtype=torch.float16)
+        up = torch.randn(3, 128, dtype=torch.float16)
+        y = swiglu_torch(gate, up)
+        assert y.shape == gate.shape
+        assert y.dtype == torch.float16
