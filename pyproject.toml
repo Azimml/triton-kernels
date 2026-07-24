@@ -1,0 +1,113 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "triton-kernels"
+version = "0.1.0"
+description = "High-performance GPU kernels for LLM inference using OpenAI Triton"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Subhadip Mitra", email = "contact@subhadipmitra.com"}
+]
+keywords = ["triton", "gpu", "cuda", "llm", "inference", "kernels"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    # The kernels use Triton 3.x idioms (e.g. do_bench quantiles, current
+    # tl.dot dtype handling). The old >=2.1 floor did not reflect reality.
+    "torch>=2.1.0",
+    "triton>=3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-benchmark>=4.0.0",
+]
+bench = [
+    "matplotlib>=3.5.0",
+    "pandas>=1.4.0",
+]
+lint = [
+    "ruff>=0.6",
+    "mypy>=1.10",
+]
+all = [
+    "triton-kernels[dev,bench,lint]",
+]
+
+[project.urls]
+Homepage = "https://github.com/Azimml/triton-kernels"
+Repository = "https://github.com/Azimml/triton-kernels"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["triton_kernels*", "benchmarks*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+# Kernels target the oldest supported interpreter.
+target-version = "py310"
+line-length = 100
+# Markdown is excluded so illustrative code snippets (with aligned explanatory
+# comments) are not reformatted by `ruff format`.
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+# A pragmatic set: pyflakes (F), pycodestyle errors (E), warnings (W),
+# isort (I), pyupgrade (UP), flake8-bugbear (B), comprehensions (C4).
+select = ["E", "F", "W", "I", "UP", "B", "C4"]
+ignore = [
+    # Triton @jit kernels intentionally shadow builtins / use short math names
+    # and long formula comments; do not fight the domain style.
+    "E501",  # line length is enforced by the formatter, not the linter
+    "E741",  # ambiguous variable names (e, l, I) are common in GEMM index math
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Package facades intentionally re-export names without using them locally.
+"**/__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["triton_kernels", "benchmarks", "reference"]
+
+[tool.mypy]
+# Advisory type checking. The Triton @jit kernels are dynamically typed by
+# design (tl.constexpr, pointer arithmetic), so mypy runs in a lenient mode
+# and is reported as non-blocking in CI.
+python_version = "3.10"
+files = ["triton_kernels", "reference", "benchmarks"]
+warn_unused_ignores = false
+warn_redundant_casts = true
+ignore_missing_imports = true
+follow_imports = "silent"
+# `reference/` and `benchmarks/` are script packages without __init__.py; treat
+# each top-level dir as its own package root so module names do not collide.
+explicit_package_bases = true
+namespace_packages = true
+# torch/triton have incomplete stubs; do not fail on their dynamic surface.
+disable_error_code = ["import-untyped"]
+
+[[tool.mypy.overrides]]
+# Kernel modules are full of Triton pointer/constexpr dynamics that static
+# typing cannot model; skip deep checking but still catch import/name errors.
+module = ["triton_kernels.*", "benchmarks.*", "reference.*"]
+disallow_untyped_defs = false
+check_untyped_defs = false
