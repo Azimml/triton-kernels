@@ -236,10 +236,18 @@ def w4a16_gemm(
     y : torch.Tensor
         FP16 output of shape (M, N).
     """
+    if x.dim() != 2:
+        raise ValueError(f"x must be 2D (M, K), got shape {tuple(x.shape)}")
+    if packed.dim() != 2:
+        raise ValueError(f"packed must be 2D (K // 8, N), got shape {tuple(packed.shape)}")
     M, K = x.shape
     N = packed.shape[1]
+    if K % 8 != 0:
+        raise ValueError(f"K ({K}) must be divisible by 8 for 4-bit packing")
     if packed.shape[0] != K // 8:
-        raise ValueError(f"packed rows ({packed.shape[0]}) must equal K // 8 ({K // 8})")
+        raise ValueError(
+            f"packed rows ({packed.shape[0]}) must equal K // 8 ({K // 8}) for x with K={K}"
+        )
     if scales.shape != (K // group_size, N) or zeros.shape != (K // group_size, N):
         raise ValueError("scales/zeros must have shape (K // group_size, N)")
     # The hoisted-scale kernel assumes each K-tile lies within a single group, i.e.
