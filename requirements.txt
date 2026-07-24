@@ -13,4 +13,4 @@ pandas>=1.4.0
 
 # Linting and type checking (CPU-side CI)
 ruff>=0.6
-mypy>=1.10
+mypy>=2.3.0
