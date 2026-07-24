@@ -1,7 +1,7 @@
 # Core dependencies
 # The kernels use Triton 3.x idioms, so 3.0 is the real minimum (not 2.1).
 torch>=2.1.0
-triton>=3.0
+triton>=3.7.1
 
 # Testing
 pytest>=7.0.0
