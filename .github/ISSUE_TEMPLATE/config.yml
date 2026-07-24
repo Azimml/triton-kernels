@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Roofline & design docs
+    url: https://github.com/Azimml/triton-kernels/tree/main/docs
+    about: Read the per-kernel roofline analysis and design notes before filing a performance issue.
+  - name: Contributing guide
+    url: https://github.com/Azimml/triton-kernels/blob/main/CONTRIBUTING.md
+    about: How to set up the dev environment, run the CPU quality gate, and add a kernel.
